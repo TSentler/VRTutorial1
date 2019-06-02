@@ -29,6 +29,8 @@ public:
 private:
 
 	class UCameraComponent* Camera;
+	class USceneComponent* VRRoot;
+
 
 	//Input functions
 	void MoveForward(float AxisValue);
