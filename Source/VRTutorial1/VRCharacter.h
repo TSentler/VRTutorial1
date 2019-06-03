@@ -23,13 +23,21 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
 
+	void CorrectionBodyLocation();
+	void UpdateDestinationMarker();
+
+	UPROPERTY()
 	class UCameraComponent* Camera;
+	UPROPERTY()
 	class USceneComponent* VRRoot;
+	UPROPERTY(VisibleAnywhere)
+	class UStaticMeshComponent* DestinationMarker;
 
 
 	//Input functions

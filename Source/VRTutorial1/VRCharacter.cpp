@@ -4,6 +4,8 @@
 #include "VRCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "DrawDebugHelpers.h"
 
 // Sets default values
 AVRCharacter::AVRCharacter()
@@ -17,6 +19,9 @@ AVRCharacter::AVRCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(VRRoot);
 
+	DestinationMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DestinationMarker"));
+	DestinationMarker->SetupAttachment(GetRootComponent());
+
 	//Take control of the default Player
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -26,6 +31,7 @@ void AVRCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	DestinationMarker->SetVisibility(false);
 }
 
 // Called every frame
@@ -33,13 +39,28 @@ void AVRCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FVector cameraOffset = Camera->GetComponentLocation() - GetActorLocation();
-	cameraOffset.Z = .0f;
-	if (cameraOffset.Size() > 20.f)
+	CorrectionBodyLocation();
+
+	UpdateDestinationMarker();
+
+}
+
+void AVRCharacter::UpdateDestinationMarker()
+{
+	FHitResult OutHit;
+	FVector Start = Camera->GetComponentLocation();
+	FVector End = (Start + 1000.f * Camera->GetForwardVector());
+	FCollisionQueryParams CollisionParams;
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
+
+	if (GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility))
 	{
-		AddActorWorldOffset(cameraOffset);
-		VRRoot->AddWorldOffset(-cameraOffset);
+		DestinationMarker->SetVisibility(true);
+		DestinationMarker->SetWorldLocation(OutHit.Location);
 	}
+	else
+		DestinationMarker->SetVisibility(false);
 }
 
 // Called to bind functionality to input
@@ -50,6 +71,17 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	//Hook up every-frame handling for our four axes
 	PlayerInputComponent->BindAxis("MoveForward", this, &AVRCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AVRCharacter::MoveRight);
+}
+
+void AVRCharacter::CorrectionBodyLocation()
+{
+	FVector cameraOffset = Camera->GetComponentLocation() - GetActorLocation();
+	cameraOffset.Z = .0f;
+	if (cameraOffset.Size() > 20.f)
+	{
+		AddActorWorldOffset(cameraOffset);
+		VRRoot->AddWorldOffset(-cameraOffset);
+	}
 }
 
 //Input functions
