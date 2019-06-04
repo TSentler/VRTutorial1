@@ -5,7 +5,10 @@
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
+#include "TimerManager.h"
 
 // Sets default values
 AVRCharacter::AVRCharacter()
@@ -52,7 +55,7 @@ void AVRCharacter::UpdateDestinationMarker()
 	FVector End = (Start + 1000.f * Camera->GetForwardVector());
 	FCollisionQueryParams CollisionParams;
 
-	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
+	//DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
 
 	if (GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility))
 	{
@@ -71,6 +74,7 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	//Hook up every-frame handling for our four axes
 	PlayerInputComponent->BindAxis("MoveForward", this, &AVRCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AVRCharacter::MoveRight);
+	PlayerInputComponent->BindAction("Teleport", IE_Released, this, &AVRCharacter::BeginTeleport);
 }
 
 void AVRCharacter::CorrectionBodyLocation()
@@ -93,5 +97,30 @@ void AVRCharacter::MoveForward(float AxisValue)
 void AVRCharacter::MoveRight(float AxisValue)
 {
 	AddMovementInput(AxisValue * Camera->GetRightVector());
+}
+
+void AVRCharacter::BeginTeleport()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+		return;
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC == nullptr)
+		return;
+
+	//World->GetTimerManager()
+	GetWorldTimerManager().SetTimer(TeleportTimerHandle, this, &AVRCharacter::FinishTeleport, CameraFadeDuaration);
+	//UGameplayStatics::GetPlayerController(GetWorld(), 0)
+	PC->PlayerCameraManager->StartCameraFade(0.f, 1.f, CameraFadeDuaration, FLinearColor(0.f, 0.f, 0.f, 1.f));
+}
+
+void AVRCharacter::FinishTeleport()
+{
+	
+	SetActorLocation(DestinationMarker->GetComponentLocation()
+						+ FVector::UpVector * GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerCameraManager
+		->StartCameraFade(1.f, 0.f, CameraFadeDuaration, FLinearColor(0.f, 0.f, 0.f, 1.f));
 }
 

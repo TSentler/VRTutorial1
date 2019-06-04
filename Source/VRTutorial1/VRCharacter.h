@@ -28,6 +28,9 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
+	UPROPERTY(EditAnywhere)
+	float CameraFadeDuaration = 1.f;
+	FTimerHandle TeleportTimerHandle;
 
 	void CorrectionBodyLocation();
 	void UpdateDestinationMarker();
@@ -43,4 +46,7 @@ private:
 	//Input functions
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
+	void BeginTeleport();
+	void FinishTeleport();
+
 };
